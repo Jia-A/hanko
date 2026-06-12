@@ -49,6 +49,7 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <meta name="google-site-verification" content="ctW8OTLXYxgBM1wI3bTyqLmyiij2A8JXi5uu384VR_c" />
         <link
           href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap"
           rel="stylesheet"
