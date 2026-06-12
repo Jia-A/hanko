@@ -1,6 +1,36 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Button } from "./Button";
+
+function FilePicker({
+  label,
+  hint,
+  accept,
+  file,
+  onPick,
+}: {
+  label: string;
+  hint: string;
+  accept: string;
+  file: File | null;
+  onPick: (f: File | null) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer flex-col gap-2 rounded-none border border-border bg-surface p-4 transition-colors hover:border-accent/60">
+      <span className="mono text-xs text-muted">{label}</span>
+      <span className="truncate text-sm text-foreground">
+        {file ? file.name : <span className="text-muted">{hint}</span>}
+      </span>
+      <input
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+      />
+    </label>
+  );
+}
 
 export default function PdfStampTool() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -120,51 +150,76 @@ const handleMouseDown = (e: React.MouseEvent) => {
 };
 
   return (
-    <div>
-      <h1>PDF Stamp Tool</h1>
+    <main className="mx-auto max-w-3xl px-5 pb-20">
+      <section className="py-12">
+        <p className="eyebrow mb-3 text-accent">[ PDF stamp tool ]</p>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Stamp a PDF
+        </h1>
+        <p className="mt-3 max-w-xl text-muted">
+          Load a PDF and a stamp image, drag the seal into place, then export the
+          stamped document. Everything runs locally in your browser.
+        </p>
+      </section>
 
-      <input
-        type="file"
-        accept="application/pdf"
-        onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
-      />
-
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => setStampFile(e.target.files?.[0] ?? null)}
-      />
-
-      <div
-  ref={containerRef}
-  style={{ position: "relative", display: "inline-block", overflow: "hidden" }}
-  onMouseMove={handleMouseMove}
-  onMouseUp={handleMouseUp}
->
-        <canvas ref={canvasRef} style={{ border: "1px solid black", display: "block" }} />
-
-        {stampSrc && (
-          <img
-            ref={stampRef}
-            src={stampSrc}
-            onMouseDown={handleMouseDown}
-            style={{
-              position: "absolute",
-              left: stampPos.x,
-              top: stampPos.y,
-              width: 100,
-              height: 100,
-              cursor: isDragging ? "grabbing" : "grab",
-              userSelect: "none",
-            }}
-          />
-        )}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FilePicker
+          label="document"
+          hint="Choose a PDF…"
+          accept="application/pdf"
+          file={pdfFile}
+          onPick={setPdfFile}
+        />
+        <FilePicker
+          label="stamp"
+          hint="Choose an image…"
+          accept="image/*"
+          file={stampFile}
+          onPick={setStampFile}
+        />
       </div>
+
+      {pdfFile && (
+        <div className="mt-6 overflow-hidden rounded-none border border-border bg-surface p-4">
+          <p className="eyebrow mb-3 text-muted">[ drag the stamp to position it ]</p>
+          <div
+            ref={containerRef}
+            className="relative inline-block max-w-full overflow-hidden rounded-none"
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+          >
+            <canvas ref={canvasRef} className="block max-w-full rounded-none border border-border" />
+
+            {stampSrc && (
+              <img
+                ref={stampRef}
+                src={stampSrc}
+                alt="stamp"
+                onMouseDown={handleMouseDown}
+                className="select-none"
+                style={{
+                  position: "absolute",
+                  left: stampPos.x,
+                  top: stampPos.y,
+                  width: 100,
+                  height: 100,
+                  cursor: isDragging ? "grabbing" : "grab",
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {pdfFile && stampFile && (
-  <button onClick={handleDownload}>
-    Download Stamped PDF
-  </button>
-)}
-    </div>
+        <Button
+          onClick={handleDownload}
+          variant="primary"
+          className="mt-5 w-full py-3 sm:w-auto sm:px-8"
+        >
+          Download stamped PDF
+        </Button>
+      )}
+    </main>
   );
 }

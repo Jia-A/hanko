@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { Button } from "./Button";
 
 const STYLES = {
   Mincho: "'Noto Serif JP', serif",
@@ -59,24 +60,30 @@ async function handleNameBlur() {
 
     if (!name) return;
 
+    // Pull the seal color from the active theme's accent token
+    const seal =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent")
+        .trim() || "#c6442b";
+
     // Outer circle
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = "#cc0000";
+    ctx.strokeStyle = seal;
     ctx.lineWidth = 6;
     ctx.stroke();
 
     // Inner circle
     ctx.beginPath();
     ctx.arc(cx, cy, radius - 10, 0, Math.PI * 2);
-    ctx.strokeStyle = "#cc0000";
+    ctx.strokeStyle = seal;
     ctx.lineWidth = 2;
     ctx.stroke();
 
     // Text
     const fontSize = name.length > 4 ? 28 : 36;
     ctx.font = `${fontSize}px ${STYLES[style]}`;
-    ctx.fillStyle = "#cc0000";
+    ctx.fillStyle = seal;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(name, cx, cy);
@@ -104,59 +111,57 @@ async function handleNameBlur() {
   }
 
   return (
-    <div className="mt-12">
-      <h2 className="text-xl font-semibold mb-4">AI Stamp Creator</h2>
-      <div className="flex flex-col gap-4 max-w-sm">
-        <input
-          type="text"
-          placeholder="Enter your name (e.g. Tanaka, Jiya, علي)"
-          value={converting ? "Converting..." : name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={handleNameBlur}
-          disabled={converting}
-          className="border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 disabled:opacity-50"
-        />
-        <div className="flex gap-2">
-          {(Object.keys(STYLES) as StyleKey[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setStyle(s)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                style === s
-                  ? "bg-red-500 text-white border-red-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-        <div className="flex justify-center">
-          <canvas
-            ref={canvasRef}
-            className="rounded-xl"
-            style={{
-              background:
-                "repeating-conic-gradient(#e5e7eb 0% 25%, white 0% 50%) 0 0 / 16px 16px",
-            }}
+    <div className="grid gap-8 md:grid-cols-2">
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="mono mb-2 block text-xs text-muted">name</label>
+          <input
+            type="text"
+            placeholder="Tanaka · Jiya"
+            value={converting ? "Converting…" : name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={handleNameBlur}
+            disabled={converting}
+            className="w-full rounded-none border border-border bg-surface px-4 py-2.5 text-sm text-foreground transition-shadow placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[var(--ring)] disabled:opacity-50"
           />
+          <p className="mono mt-1.5 text-[11px] text-muted">
+            Latin names are auto-converted to kanji on blur.
+          </p>
         </div>
-        {name && (
+
+        <div>
+          <label className="mono mb-2 block text-xs text-muted">style</label>
           <div className="flex gap-2">
-            <button
-              onClick={handleDownload}
-              className="flex-1 bg-gray-800 text-white py-2 rounded-xl text-sm hover:bg-gray-900"
-            >
+            {(Object.keys(STYLES) as StyleKey[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => setStyle(s)}
+                className={`eyebrow flex-1 border py-2.5 transition-colors ${
+                  style === s
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-surface text-muted hover:border-accent hover:text-accent"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {name && (
+          <div className="flex gap-2 pt-1">
+            <Button onClick={handleDownload} variant="secondary" className="flex-1">
               Download PNG
-            </button>
-            <button
-              onClick={handleSaveToGallery}
-              className="flex-1 bg-red-500 text-white py-2 rounded-xl text-sm hover:bg-red-600"
-            >
+            </Button>
+            <Button onClick={handleSaveToGallery} variant="primary" className="flex-1">
               Save to Gallery
-            </button>
+            </Button>
           </div>
         )}
+      </div>
+
+      <div className="flex items-center justify-center rounded-none border border-border bg-surface p-6">
+        <canvas ref={canvasRef} className="checker rounded-none" />
       </div>
     </div>
   );

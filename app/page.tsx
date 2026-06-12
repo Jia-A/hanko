@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import UploadZone from "./components/UploadZone";
 import { saveStamp, getStamps, deleteStamp } from "@/lib/stampStorage";
 import StampCreator from "./components/StampCreator";
+import Section from "./components/Section";
+import { Button, LinkButton } from "./components/Button";
 
 function downloadSVG(dataUrl: string) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -79,87 +81,118 @@ export default function Home() {
   }
 
   return (
-    <main className="max-w-2xl mx-auto py-16 px-4">
-      <h1 className="text-3xl font-bold text-center mb-2">Hanko</h1>
-      <p className="text-center text-gray-500 mb-8">
-        Extract stamps and seals from any image
-      </p>
-
-      <UploadZone onImageSelected={setFile} />
-
-      {file && (
-        <button
-          onClick={handleExtract}
-          disabled={loading}
-          className="mt-6 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
-        >
-          {loading ? "Extracting..." : "Extract Stamp"}
-        </button>
-      )}
-
-      {resultUrl && (
-        <div className="mt-8 text-center">
-          <p className="text-gray-600 mb-3">Extracted stamp:</p>
-          <img
-            src={resultUrl}
-            alt="extracted stamp"
-            className="max-h-64 mx-auto"
-            style={{
-              background:
-                "repeating-conic-gradient(#e5e7eb 0% 25%, white 0% 50%) 0 0 / 16px 16px",
-            }}
-          />
-          <a
-            href={resultUrl}
-            download="stamp.png"
-            className="mt-4 inline-block bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-900"
-          >
-            Download PNG
-          </a>
-          <button
-            onClick={async () => {
-              if (!resultUrl) return;
-              const res = await fetch(resultUrl);
-              const blob = await res.blob();
-              const base64 = await blobToBase64(blob);
-              downloadSVG(base64);
-            }}
-            className="mt-2 inline-block bg-white border border-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-50"
-          >
-            Download SVG
-          </button>
+    <main className="mx-auto max-w-3xl px-5 pb-20">
+      {/* Hero */}
+      <section className="py-16 sm:py-20">
+        <p className="eyebrow mb-4 text-accent">[ digital seal studio ]</p>
+        <h1 className="text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+          Make your mark.
+          <br />
+          <span className="text-muted">Extract, create &amp; apply seals.</span>
+        </h1>
+        <p className="mt-5 max-w-xl text-base text-muted">
+          hanko is a small, focused studio for Japanese-style stamps — pull a seal
+          out of any image, generate one from a name, and stamp it onto a PDF.
+        </p>
+        <div className="mt-7 flex flex-wrap gap-3">
+          <LinkButton href="#extract" variant="primary">
+            Get started →
+          </LinkButton>
+          <LinkButton href="/pdf-tool" variant="secondary">
+            PDF stamp tool
+          </LinkButton>
         </div>
-      )}
+      </section>
 
+      {/* 01 — Extract */}
+      <div id="extract" className="scroll-mt-20">
+        <Section
+          index="01"
+          title="Extract a stamp"
+          subtitle="Upload an image — we isolate the seal on a transparent background."
+        >
+          <UploadZone onImageSelected={setFile} />
+
+          {file && (
+            <Button
+              onClick={handleExtract}
+              disabled={loading}
+              variant="primary"
+              fullWidth
+              className="mt-5 py-3"
+            >
+              {loading ? "Extracting…" : "Extract stamp"}
+            </Button>
+          )}
+
+          {resultUrl && (
+            <div className="mt-8 rounded-none border border-border bg-surface p-6 text-center">
+              <p className="eyebrow mb-4 text-muted">[ result ]</p>
+              <img
+                src={resultUrl}
+                alt="extracted stamp"
+                className="checker mx-auto max-h-64 rounded-none"
+              />
+              <div className="mt-5 flex justify-center gap-2">
+                <LinkButton
+                  href={resultUrl}
+                  download="stamp.png"
+                  variant="primary"
+                  size="sm"
+                >
+                  Download PNG
+                </LinkButton>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={async () => {
+                    if (!resultUrl) return;
+                    const res = await fetch(resultUrl);
+                    const blob = await res.blob();
+                    const base64 = await blobToBase64(blob);
+                    downloadSVG(base64);
+                  }}
+                >
+                  Download SVG
+                </Button>
+              </div>
+            </div>
+          )}
+        </Section>
+      </div>
+
+      {/* 02 — Gallery */}
       {stamps.length > 0 && (
-        <div className="mt-12">
-          <h2 className="text-xl font-semibold mb-4">Stamp Gallery</h2>
-          <div className="grid grid-cols-3 gap-4">
+        <Section
+          index="02"
+          title="Stamp gallery"
+          subtitle="Saved locally in your browser. Read a seal to decode its kanji."
+        >
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {stamps.map((stamp) => (
               <div
                 key={stamp.id}
-                className="relative group border rounded-xl p-2 flex flex-col gap-2"
-                style={{
-                  background:
-                    "repeating-conic-gradient(#e5e7eb 0% 25%, white 0% 50%) 0 0 / 16px 16px",
-                }}
+                className="group relative flex flex-col gap-2 rounded-none border border-border bg-surface p-3"
               >
-                <img
-                  src={stamp.data}
-                  alt="stamp"
-                  className="w-full h-24 object-contain"
-                />
-                <button
+                <div className="checker rounded-none">
+                  <img
+                    src={stamp.data}
+                    alt="stamp"
+                    className="h-24 w-full object-contain"
+                  />
+                </div>
+                <Button
                   onClick={() => handleReadStamp(stamp)}
                   disabled={readingLoading === stamp.id}
-                  className="w-full bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-1 rounded-lg disabled:opacity-50"
+                  variant="secondary"
+                  fullWidth
+                  className="rounded-none px-2 py-1.5 text-xs"
                 >
-                  {readingLoading === stamp.id ? "Reading..." : "Read Stamp"}
-                </button>
+                  {readingLoading === stamp.id ? "Reading…" : "Read stamp"}
+                </Button>
                 {readings[stamp.id] && (
-                  // In the JSX where you render readings[stamp.id]
                   <p
-                    className="text-xs text-gray-700 bg-white rounded p-2 mt-1"
+                    className="rounded-none bg-surface-2 p-2 text-xs text-foreground"
                     dangerouslySetInnerHTML={{
                       __html: readings[stamp.id]
                         .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -172,17 +205,42 @@ export default function Home() {
                     deleteStamp(stamp.id);
                     setStamps(getStamps());
                   }}
-                  className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 items-center justify-center hidden group-hover:flex"
+                  aria-label="Delete stamp"
+                  className="absolute right-2 top-2 hidden h-6 w-6 items-center justify-center rounded-full bg-accent text-sm text-white group-hover:flex"
                 >
                   ×
                 </button>
               </div>
             ))}
           </div>
-        </div>
+        </Section>
       )}
 
-      <StampCreator />
+      {/* Creator */}
+      <Section
+        index={stamps.length > 0 ? "03" : "02"}
+        title="AI stamp creator"
+        subtitle="Type a name and we render a circular hanko you can save or download."
+      >
+        <StampCreator />
+      </Section>
+
+      {/* PDF tool */}
+      <Section
+        index={stamps.length > 0 ? "04" : "03"}
+        title="Apply to a PDF"
+        subtitle="Take any stamp and drop it onto a document, then export the stamped PDF."
+      >
+        <div className="flex flex-col items-start gap-4 rounded-none border border-border bg-surface p-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted">
+            Open the PDF stamp tool to position a seal and download a signed copy —
+            all processed locally in your browser.
+          </p>
+          <LinkButton href="/pdf-tool" variant="primary" className="shrink-0">
+            Open PDF stamp tool →
+          </LinkButton>
+        </div>
+      </Section>
     </main>
   );
 }

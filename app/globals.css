@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
+/* ---- Theme tokens ---- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fbfaf7;
+  --foreground: #1a1a1a;
+  --muted: #6b6b6b;
+  --border: #e4e1d9;
+  --surface: #ffffff;
+  --surface-2: #f3f1ea;
+  --accent: #c6442b;
+  --accent-hover: #a8351f;
+  --ring: rgba(198, 68, 43, 0.4);
+}
+
+.dark {
+  --background: #0d0d0f;
+  --foreground: #ededed;
+  --muted: #8a8a8a;
+  --border: #232327;
+  --surface: #141417;
+  --surface-2: #1b1b1f;
+  --accent: #e25c41;
+  --accent-hover: #ec7257;
+  --ring: rgba(226, 92, 65, 0.4);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Subtle dotted-grid backdrop, like the reference sites */
+.grid-backdrop {
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Monospace, uppercase, letter-spaced label — used for buttons & section markers */
+.eyebrow {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+/* Animated underline that wipes in on hover — for text links */
+.link-underline {
+  position: relative;
+}
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: 100%;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.link-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: 0;
+}
+
+/* checkerboard for transparent stamp previews */
+.checker {
+  background-image:
+    linear-gradient(45deg, var(--surface-2) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--surface-2) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--surface-2) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--surface-2) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
 }
