@@ -24,6 +24,7 @@ A web application for creating, extracting, and analyzing stamps (hanko/seals) f
   - [Sharp](https://sharp.pixelplumbing.com/) - Server-side image optimization
   - [browser-image-compression](https://github.com/Donaldcwl/browser-image-compression) - Client-side compression
 - **Build Tools**: ESLint, PostCSS
+- **Deployment**: Optimized for [Vercel](https://vercel.com/)
 
 ## Getting Started
 
@@ -79,23 +80,31 @@ npm start
 ```
 ├── app/
 │   ├── api/                          # API routes
-│   │   ├── extract/route.ts          # Extract stamps from images
+│   │   ├── extract/route.ts          # Remove background from stamp images
 │   │   ├── read-stamp/route.ts       # AI analysis of stamps
-│   │   └── convert-name/route.ts     # Convert text to stamp
+│   │   └── convert-name/route.ts     # Convert a name to kanji via AI
 │   ├── components/                   # React components
 │   │   ├── PdfStampTool.tsx          # Main PDF stamp insertion tool
 │   │   ├── StampCreator.tsx          # Stamp creation interface
 │   │   ├── UploadZone.tsx            # File upload handler
-│   │   └── ResultPreview.tsx         # Results display
+│   │   ├── ResultPreview.tsx         # Results display
+│   │   ├── Navbar.tsx                # Top navigation bar
+│   │   ├── Section.tsx               # Layout section wrapper
+│   │   ├── Button.tsx                # Reusable button component
+│   │   ├── Logo.tsx                  # App logo
+│   │   └── ThemeToggle.tsx           # Light/dark theme switch
+│   ├── pdf-tool/page.tsx             # PDF stamping tool page
 │   ├── page.tsx                      # Home page
 │   ├── layout.tsx                    # Root layout
+│   ├── sitemap.ts                    # Sitemap generation for SEO
+│   ├── icon.svg                      # App icon / favicon
 │   └── globals.css                   # Global styles
 ├── lib/
 │   └── stampStorage.ts               # Local storage utilities for stamps
 ├── public/
 │   └── pdf.worker.min.mjs            # PDF.js worker (required for PDF processing)
 ├── next.config.ts                    # Next.js configuration
-├── tailwind.config.ts                # Tailwind CSS configuration
+├── postcss.config.mjs                # PostCSS / Tailwind configuration
 ├── tsconfig.json                     # TypeScript configuration
 └── eslint.config.mjs                 # ESLint configuration
 ```
@@ -103,24 +112,18 @@ npm start
 ## API Routes
 
 ### `/api/extract` (POST)
-Extracts stamp outlines from uploaded images using color-based detection.
+Removes the background from an uploaded stamp image using edge-seeded flood-fill color detection (powered by Sharp). Returns the processed image as a transparent PNG.
 
-**Request:**
-```json
-{
-  "image": File
-}
-```
+**Request:** `multipart/form-data`
 
-**Response:**
-```json
-{
-  "svgData": "data:image/svg+xml;..."
-}
-```
+| Field | Type | Description |
+|-------|------|-------------|
+| `image` | File | The image to process |
+
+**Response:** binary `image/png` (transparent background)
 
 ### `/api/read-stamp` (POST)
-Uses Google's Gemini AI to analyze and read stamp content.
+Uses Google's Gemini AI (`gemini-2.5-flash`) to analyze and read stamp content.
 
 **Request:**
 ```json
@@ -133,25 +136,24 @@ Uses Google's Gemini AI to analyze and read stamp content.
 **Response:**
 ```json
 {
-  "text": "Analysis of stamp content including any readable text"
+  "reading": "Analysis of stamp content including any readable text"
 }
 ```
 
 ### `/api/convert-name` (POST)
-Converts text input into a stamp image.
+Converts a name into Japanese kanji (max 3 characters) suitable for a personal hanko, using Gemini AI (`gemini-2.0-flash`).
 
 **Request:**
 ```json
 {
-  "name": "Text to convert",
-  "style": "stamp" // or other style options
+  "name": "Text to convert"
 }
 ```
 
 **Response:**
 ```json
 {
-  "stampUrl": "data:image/png;..."
+  "converted": "漢字"
 }
 ```
 
@@ -171,18 +173,18 @@ Displays extracted stamps and AI analysis results.
 
 ## Local Storage
 
-Stamps are saved to browser localStorage with the key `stamps`. Each stamp is stored as:
+Stamps are saved to browser localStorage under the key `hanko_stamps`. Each stamp is stored as:
 ```json
 {
   "id": "unique_id",
-  "data": "base64_or_svg_data"
+  "data": "base64_image_data"
 }
 ```
 
 Use the `stampStorage.ts` utilities:
-- `saveStamp(data)` - Save a new stamp
+- `saveStamp(base64)` - Save a new stamp (prepended to the list, with an auto-generated id)
 - `getStamps()` - Retrieve all saved stamps
-- `deleteStamp(id)` - Remove a stamp
+- `deleteStamp(id)` - Remove a stamp by id
 
 ## Environment Variables
 
@@ -195,9 +197,8 @@ Get your API key from [Google AI Studio](https://aistudio.google.com/apikey).
 ## Performance Optimizations
 
 - **Image Compression**: Images are compressed both server-side (Sharp) and client-side
-- **PDF Worker**: Uses externally hosted PDF.js worker for efficient PDF processing
-- **Next.js Optimization**: Leverages automatic code splitting and optimization
-- **Lazy Loading**: Components load on demand
+- **PDF Worker**: Serves the PDF.js worker locally from `public/` for efficient PDF processing
+- **Next.js Optimization**: Leverages automatic code splitting and per-route optimization
 
 ## Browser Compatibility
 
