@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "browser-image-compression": "^2.0.2",
     "next": "16.2.7",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.0.227",

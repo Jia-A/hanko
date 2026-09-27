@@ -3,18 +3,26 @@
 import { useState, useRef } from "react";
 
 interface UploadZoneProps {
-  onImageSelected: (file: File) => void;
+  onFileSelected: (file: File) => void;
 }
 
-export default function UploadZone({ onImageSelected }: UploadZoneProps) {
+export default function UploadZone({ onFileSelected }: UploadZoneProps) {
   const [preview, setPreview] = useState<string | null>(null);
+  const [pdfName, setPdfName] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
-    if (!file.type.startsWith("image/")) return;
-    setPreview(URL.createObjectURL(file));
-    onImageSelected(file);
+    if (file.type === "application/pdf") {
+      setPreview(null);
+      setPdfName(file.name);
+    } else if (file.type.startsWith("image/")) {
+      setPdfName(null);
+      setPreview(URL.createObjectURL(file));
+    } else {
+      return;
+    }
+    onFileSelected(file);
   }
 
   return (
@@ -40,14 +48,22 @@ export default function UploadZone({ onImageSelected }: UploadZoneProps) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) handleFile(file);
         }}
       />
-      {preview ? (
+      {pdfName ? (
+        <div className="flex flex-col items-center gap-2">
+          <p className="mono text-xs text-muted">[ pdf ]</p>
+          <p className="max-w-full truncate text-sm text-foreground" title={pdfName}>
+            {pdfName}
+          </p>
+          <p className="mono text-xs text-muted">click to choose a different file</p>
+        </div>
+      ) : preview ? (
         <img
           src={preview}
           alt="preview"
@@ -63,10 +79,10 @@ export default function UploadZone({ onImageSelected }: UploadZoneProps) {
             </svg>
           </div>
           <p className="text-sm text-foreground">
-            Drop a stamp image, or{" "}
+            Drop a stamp image or PDF, or{" "}
             <span className="text-accent underline underline-offset-2">browse</span>
           </p>
-          <p className="mono text-xs text-muted">PNG · JPG · any image</p>
+          <p className="mono text-xs text-muted">PNG · JPG · PDF</p>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { Button } from "./Button";
+import { saveStamp } from "@/lib/stampStorage";
 
 const STYLES = {
   Mincho: "'Noto Serif JP', serif",
@@ -82,14 +83,12 @@ async function handleNameBlur() {
 
     // Text
     const fontSize = name.length > 4 ? 28 : 36;
-    ctx.font = `${fontSize}px ${STYLES[style]}`;
+    const fontWeight = style === "Tensho" ? "bold" : "normal";
+    ctx.font = `${fontWeight} ${fontSize}px ${STYLES[style]}`;
     ctx.fillStyle = seal;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(name, cx, cy);
-
-    const fontWeight = style === "Tensho" ? "bold" : "normal";
-    ctx.font = `${fontWeight} ${fontSize}px ${STYLES[style]}`;
   }, [name, style]);
 
   function handleDownload() {
@@ -105,7 +104,6 @@ async function handleNameBlur() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const dataUrl = canvas.toDataURL("image/png");
-    const { saveStamp } = require("@/lib/stampStorage");
     saveStamp(dataUrl);
     alert("Saved to gallery!");
   }

@@ -1,43 +1,60 @@
-# Hanko - PDF Stamp Tool
+# 印 hanko - Digital Seal Studio
 
-A web application for creating, extracting, and analyzing stamps (hanko/seals) from PDF documents using AI-powered recognition and PDF manipulation.
+A small web studio for Japanese-style stamps (hanko / seals). Pull a seal out of an image or a PDF, generate one from a name, read it with AI, and stamp it onto a PDF.
+
+**Live:** [hankostudio.vercel.app](https://hankostudio.vercel.app)
 
 ## Features
 
-- **Stamp Creation**: Generate stamps from text input with customizable styling
-- **PDF Stamp Insertion**: Add created stamps to PDF documents
-- **Stamp Extraction**: Extract stamps and seals from uploaded PDF files
-- **AI Analysis**: Use Google's Gemini API to read and analyze stamp content (supports multiple languages including kanji)
-- **Stamp Storage**: Save and manage created stamps locally in the browser
-- **Image Compression**: Automatic image compression for optimal performance
-- **Real-time Preview**: See stamp results immediately with live updates
+### Extract a stamp
+- Upload an **image** (PNG, JPG, …) or a **PDF** by drag-and-drop or file picker
+- For PDFs: browse pages, then **drag a box around the stamp** to crop it
+- The background is removed on the server, leaving the seal on a transparent background
+- Download the result as **PNG** or **SVG**; it's also saved to your gallery automatically
+
+### Stamp gallery
+- Every extracted or created stamp is saved locally in your browser (no account, no upload to storage)
+- **Read stamp**: Gemini AI reads the characters (kanji, latin or any script), translates them, and identifies the stamp type (personal hanko, company seal, signature, …)
+- Delete stamps you no longer need
+
+### AI stamp creator
+- Type a name and get a circular, double-ringed hanko rendered live on a canvas
+- **Latin names are auto-converted to kanji** (max 3 characters) using Gemini AI; names already in kanji/kana are kept as-is
+- Three font styles: **Mincho**, **Gothic** and **Tensho**
+- Download as PNG or save to the gallery
+
+### PDF stamp tool (`/pdf-tool`)
+- Load a PDF, then upload a stamp image (any format) or **pick one from your gallery**
+- Choose the page, drag the stamp into position (mouse or touch) and adjust its size
+- Download the stamped PDF. Processing happens entirely in the browser
+
+### Other
+- Light / dark theme toggle (follows the system preference by default, no flash on load)
+- SEO: generated `sitemap.xml` and Google site verification
 
 ## Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript)
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, React 19, TypeScript)
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
-- **PDF Processing**: 
-  - [pdf-lib](https://pdf-lib.js.org/) - PDF creation and manipulation
-  - [pdfjs-dist](https://mozilla.github.io/pdf.js/) - PDF viewing and extraction
+- **PDF**:
+  - [pdfjs-dist](https://mozilla.github.io/pdf.js/) - rendering PDF pages in the browser
+  - [pdf-lib](https://pdf-lib.js.org/) - embedding stamps into PDFs
+- **Image processing**: [Sharp](https://sharp.pixelplumbing.com/) - server-side background removal
 - **AI**: [Google Generative AI](https://ai.google.dev/) (Gemini API)
-- **Image Processing**: 
-  - [Sharp](https://sharp.pixelplumbing.com/) - Server-side image optimization
-  - [browser-image-compression](https://github.com/Donaldcwl/browser-image-compression) - Client-side compression
-- **Build Tools**: ESLint, PostCSS
-- **Deployment**: Optimized for [Vercel](https://vercel.com/)
+- **Deployment**: [Vercel](https://vercel.com/)
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
-- npm or yarn package manager
-- Google Gemini API key (for stamp analysis features)
+- Node.js 20.9+ (required by Next.js 16)
+- npm
+- A Google Gemini API key (only needed for the AI features: reading stamps and name → kanji conversion)
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/Jia-A/hanko.git
 cd hanko
 ```
 
@@ -46,73 +63,80 @@ cd hanko
 npm install
 ```
 
-3. Set up environment variables:
-Create a `.env.local` file in the root directory:
+3. Create a `.env.local` file in the project root:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-4. Copy PDF worker file:
+4. The PDF.js worker is committed at `public/pdf.worker.min.mjs`. If you upgrade `pdfjs-dist`, copy the matching worker again:
 ```bash
 cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs
 ```
 
 ### Development
 
-Run the development server:
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+Open [http://localhost:3000](http://localhost:3000).
 
-The app will auto-reload as you make changes to `app/page.tsx` and other files.
-
-### Build for Production
+### Production build
 
 ```bash
 npm run build
 npm start
 ```
 
+### Lint
+
+```bash
+npm run lint
+```
+
 ## Project Structure
 
 ```
 ├── app/
-│   ├── api/                          # API routes
-│   │   ├── extract/route.ts          # Remove background from stamp images
-│   │   ├── read-stamp/route.ts       # AI analysis of stamps
+│   ├── api/
+│   │   ├── extract/route.ts          # Remove the background from a stamp image
+│   │   ├── read-stamp/route.ts       # AI reading of a stamp
 │   │   └── convert-name/route.ts     # Convert a name to kanji via AI
-│   ├── components/                   # React components
-│   │   ├── PdfStampTool.tsx          # Main PDF stamp insertion tool
-│   │   ├── StampCreator.tsx          # Stamp creation interface
-│   │   ├── UploadZone.tsx            # File upload handler
-│   │   ├── ResultPreview.tsx         # Results display
+│   ├── components/
+│   │   ├── UploadZone.tsx            # Drag-and-drop upload for images and PDFs
+│   │   ├── PdfRegionPicker.tsx       # PDF page viewer + crop box for selecting a stamp
+│   │   ├── StampCreator.tsx          # Canvas-based stamp generator
+│   │   ├── PdfStampTool.tsx          # Place a stamp on any PDF page and export it
 │   │   ├── Navbar.tsx                # Top navigation bar
-│   │   ├── Section.tsx               # Layout section wrapper
-│   │   ├── Button.tsx                # Reusable button component
+│   │   ├── Section.tsx               # Numbered layout section
+│   │   ├── Button.tsx                # Button / LinkButton components
 │   │   ├── Logo.tsx                  # App logo
 │   │   └── ThemeToggle.tsx           # Light/dark theme switch
-│   ├── pdf-tool/page.tsx             # PDF stamping tool page
-│   ├── page.tsx                      # Home page
-│   ├── layout.tsx                    # Root layout
-│   ├── sitemap.ts                    # Sitemap generation for SEO
-│   ├── icon.svg                      # App icon / favicon
-│   └── globals.css                   # Global styles
+│   ├── pdf-tool/page.tsx             # PDF stamp tool page
+│   ├── page.tsx                      # Home: extract, gallery, creator
+│   ├── layout.tsx                    # Root layout, fonts, theme script, metadata
+│   ├── sitemap.ts                    # Sitemap generation
+│   ├── icon.svg                      # Favicon
+│   └── globals.css                   # Theme tokens and global styles
 ├── lib/
-│   └── stampStorage.ts               # Local storage utilities for stamps
-├── public/
-│   └── pdf.worker.min.mjs            # PDF.js worker (required for PDF processing)
-├── next.config.ts                    # Next.js configuration
-├── postcss.config.mjs                # PostCSS / Tailwind configuration
-├── tsconfig.json                     # TypeScript configuration
-└── eslint.config.mjs                 # ESLint configuration
+│   └── stampStorage.ts               # localStorage helpers for the gallery
+└── public/
+    └── pdf.worker.min.mjs            # PDF.js worker
 ```
+
+## How extraction works
+
+1. **Image input** is sent as-is. **PDF input** is rendered in the browser with pdf.js at 2× scale; the area you select is cropped into a PNG.
+2. The image is posted to `/api/extract`, where Sharp reads its raw pixels.
+3. A flood fill starts from every edge pixel and makes transparent every connected pixel whose color is close to the top-left pixel's color (Euclidean RGB distance < 80).
+4. The result is returned as a transparent PNG.
+
+Because the fill only reaches background connected to the edges, enclosed areas (such as paper inside a ring) stay opaque. For best results, crop tightly around the stamp on a plain background.
 
 ## API Routes
 
-### `/api/extract` (POST)
-Removes the background from an uploaded stamp image using edge-seeded flood-fill color detection (powered by Sharp). Returns the processed image as a transparent PNG.
+### `POST /api/extract`
+Removes the background from a stamp image.
 
 **Request:** `multipart/form-data`
 
@@ -120,122 +144,83 @@ Removes the background from an uploaded stamp image using edge-seeded flood-fill
 |-------|------|-------------|
 | `image` | File | The image to process |
 
-**Response:** binary `image/png` (transparent background)
+**Response:** `image/png` with a transparent background, or `400` if no image is provided.
 
-### `/api/read-stamp` (POST)
-Uses Google's Gemini AI (`gemini-2.5-flash`) to analyze and read stamp content.
+### `POST /api/read-stamp`
+Reads and describes a stamp using Gemini (`gemini-2.5-flash`).
 
 **Request:**
 ```json
 {
-  "imageBase64": "base64_encoded_image",
+  "imageBase64": "raw base64 (no data: prefix)",
   "mimeType": "image/png"
 }
 ```
+`mimeType` is optional and defaults to `image/png`.
 
 **Response:**
 ```json
 {
-  "reading": "Analysis of stamp content including any readable text"
+  "reading": "Readable text, its meaning, and the stamp type"
 }
 ```
+Errors return `{ "error": "..." }` with status `400` or `500`.
 
-### `/api/convert-name` (POST)
-Converts a name into Japanese kanji (max 3 characters) suitable for a personal hanko, using Gemini AI (`gemini-2.0-flash`).
+### `POST /api/convert-name`
+Converts a name to kanji (max 3 characters) suitable for a personal hanko, using Gemini (`gemini-2.0-flash`).
 
 **Request:**
 ```json
 {
-  "name": "Text to convert"
+  "name": "Tanaka"
 }
 ```
 
 **Response:**
 ```json
 {
-  "converted": "漢字"
+  "converted": "田中"
 }
 ```
-
-## Key Components
-
-### StampCreator
-Handles stamp creation with customizable text and styling options.
-
-### PdfStampTool
-Manages PDF file handling and stamp insertion into documents.
-
-### UploadZone
-Drag-and-drop file upload interface for PDFs and images.
-
-### ResultPreview
-Displays extracted stamps and AI analysis results.
+On failure, `converted` is `null`.
 
 ## Local Storage
 
-Stamps are saved to browser localStorage under the key `hanko_stamps`. Each stamp is stored as:
-```json
-{
-  "id": "unique_id",
-  "data": "base64_image_data"
-}
-```
+| Key | Contents |
+|-----|----------|
+| `hanko_stamps` | Array of saved stamps: `{ "id": "<timestamp>", "data": "<data URL>" }`, newest first |
+| `theme` | `"light"` or `"dark"` |
 
-Use the `stampStorage.ts` utilities:
-- `saveStamp(base64)` - Save a new stamp (prepended to the list, with an auto-generated id)
-- `getStamps()` - Retrieve all saved stamps
-- `deleteStamp(id)` - Remove a stamp by id
+Helpers in `lib/stampStorage.ts`:
+- `saveStamp(dataUrl)` - add a stamp to the start of the list
+- `getStamps()` - return all saved stamps
+- `deleteStamp(id)` - remove a stamp
+
+Stamps are stored in full as data URLs, so browser storage limits (usually about 5 MB) cap how many you can keep.
 
 ## Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `GEMINI_API_KEY` | Google Generative AI API key for stamp analysis | Yes |
+| `GEMINI_API_KEY` | Google Generative AI key used by `/api/read-stamp` and `/api/convert-name` | For AI features |
 
-Get your API key from [Google AI Studio](https://aistudio.google.com/apikey).
+Get a key from [Google AI Studio](https://aistudio.google.com/apikey).
 
-## Performance Optimizations
+## Known Limitations
 
-- **Image Compression**: Images are compressed both server-side (Sharp) and client-side
-- **PDF Worker**: Serves the PDF.js worker locally from `public/` for efficient PDF processing
-- **Next.js Optimization**: Leverages automatic code splitting and per-route optimization
-
-## Browser Compatibility
-
-- Chrome/Chromium 90+
-- Firefox 88+
-- Safari 15+
-- Edge 90+
+- The PDF stamp tool places one stamp per export, on one page. To stamp several pages, stamp the downloaded file again.
+- Background removal samples a single background color, so noisy or gradient backgrounds may leave artifacts.
 
 ## Troubleshooting
 
-### PDF Worker Not Found
-Make sure `pdf.worker.min.mjs` exists in the `public/` folder. If missing, run:
-```bash
-cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs
-```
+### PDF won't render
+Make sure `public/pdf.worker.min.mjs` exists and matches the installed `pdfjs-dist` version (see step 4 of Installation).
 
-### Gemini API Errors
-- Verify `GEMINI_API_KEY` is correctly set in `.env.local`
-- Check API key permissions and quota limits in Google Cloud Console
-- Ensure the API is enabled for your project
-
-### Large File Processing
-- Browser compression reduces image size before upload
-- Sharp on the server further optimizes during processing
-- Consider splitting very large PDFs before uploading
-
-## Contributing
-
-Contributions are welcome! Please follow the existing code style and add tests for new features.
+### "Read stamp" or name conversion does nothing
+- Check that `GEMINI_API_KEY` is set in `.env.local` and restart the dev server
+- Check your key's quota in [Google AI Studio](https://aistudio.google.com/)
+- Server logs show the underlying Gemini error
 
 ## License
 
 This project is private. Please contact the maintainer for licensing information.
-
-## Learn More
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [pdf-lib Documentation](https://pdf-lib.js.org/)
-- [Google Generative AI Docs](https://ai.google.dev/docs)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import UploadZone from "./components/UploadZone";
 import { saveStamp, getStamps, deleteStamp } from "@/lib/stampStorage";
 import StampCreator from "./components/StampCreator";
+import PdfRegionPicker from "./components/PdfRegionPicker";
 import Section from "./components/Section";
 import { Button, LinkButton } from "./components/Button";
 
@@ -22,6 +23,9 @@ function downloadSVG(dataUrl: string) {
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
+  // For PDFs, the user-selected crop around the stamp
+  const [pdfRegion, setPdfRegion] = useState<Blob | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [stamps, setStamps] = useState<{ id: string; data: string }[]>([]);
@@ -41,24 +45,40 @@ export default function Home() {
     });
   }
 
+  const isPdf = file?.type === "application/pdf";
+
+  function handleFileSelected(f: File) {
+    setFile(f);
+    setPdfRegion(null);
+    setError(null);
+  }
+
   async function handleExtract() {
-    if (!file) return;
+    const source = isPdf ? pdfRegion : file;
+    if (!source) return;
     setLoading(true);
+    setError(null);
 
-    const formData = new FormData();
-    formData.append("image", file);
+    try {
+      const formData = new FormData();
+      formData.append("image", source);
 
-    const res = await fetch("/api/extract", {
-      method: "POST",
-      body: formData,
-    });
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error();
 
-    const blob = await res.blob();
-    setResultUrl(URL.createObjectURL(blob));
-    const base64 = await blobToBase64(blob);
-    saveStamp(base64);
-    setStamps(getStamps());
-    setLoading(false);
+      const blob = await res.blob();
+      setResultUrl(URL.createObjectURL(blob));
+      const base64 = await blobToBase64(blob);
+      saveStamp(base64);
+      setStamps(getStamps());
+    } catch {
+      setError("Extraction failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleReadStamp(stamp: { id: string; data: string }) {
@@ -109,21 +129,31 @@ export default function Home() {
         <Section
           index="01"
           title="Extract a stamp"
-          subtitle="Upload an image — we isolate the seal on a transparent background."
+          subtitle="Upload an image or PDF — we isolate the seal on a transparent background."
         >
-          <UploadZone onImageSelected={setFile} />
+          <UploadZone onFileSelected={handleFileSelected} />
+
+          {file && isPdf && (
+            <PdfRegionPicker key={`${file.name}-${file.lastModified}`} file={file} onRegionSelected={setPdfRegion} />
+          )}
 
           {file && (
             <Button
               onClick={handleExtract}
-              disabled={loading}
+              disabled={loading || (isPdf && !pdfRegion)}
               variant="primary"
               fullWidth
               className="mt-5 py-3"
             >
-              {loading ? "Extracting…" : "Extract stamp"}
+              {loading
+                ? "Extracting…"
+                : isPdf && !pdfRegion
+                  ? "Select the stamp on the page"
+                  : "Extract stamp"}
             </Button>
           )}
+
+          {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
           {resultUrl && (
             <div className="mt-8 rounded-none border border-border bg-surface p-6 text-center">
