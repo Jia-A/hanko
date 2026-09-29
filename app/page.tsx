@@ -30,9 +30,12 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [stamps, setStamps] = useState<{ id: string; data: string }[]>([]);
 
-  useEffect(() => {
-    setStamps(getStamps());
-  }, []);
+useEffect(() => {
+  // localStorage is client-only; reading after mount avoids a hydration mismatch.
+  // TODO: migrate to useSyncExternalStore.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  setStamps(getStamps());
+}, []);
 
   const [readings, setReadings] = useState<Record<string, string>>({});
   const [readingLoading, setReadingLoading] = useState<string | null>(null);
@@ -99,6 +102,17 @@ export default function Home() {
       setReadingLoading(null);
     }
   }
+
+  function renderReading(text: string) {
+  return text.split("\n").map((line, i) => (
+    <span key={i}>
+      {line.split("**").map((part, j) =>
+        j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+      )}
+      <br />
+    </span>
+  ));
+}
 
   return (
     <main className="mx-auto max-w-3xl px-5 pb-20">
@@ -221,14 +235,9 @@ export default function Home() {
                   {readingLoading === stamp.id ? "Reading…" : "Read stamp"}
                 </Button>
                 {readings[stamp.id] && (
-                  <p
-                    className="rounded-none bg-surface-2 p-2 text-xs text-foreground"
-                    dangerouslySetInnerHTML={{
-                      __html: readings[stamp.id]
-                        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                        .replace(/\n/g, "<br/>"),
-                    }}
-                  />
+                  <p className="rounded-none bg-surface-2 p-2 text-xs text-foreground">
+  {renderReading(readings[stamp.id])}
+</p>
                 )}
                 <button
                   onClick={() => {
