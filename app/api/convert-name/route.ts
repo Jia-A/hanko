@@ -3,12 +3,16 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: Request) {
+  if (!process.env.GEMINI_API_KEY) {
+    console.error("GEMINI_API_KEY is not set");
+    return Response.json({ converted: null });
+  }
+
   try {
     const { name } = await req.json();
     if (!name) return Response.json({ converted: null });
 
-    // const model = genai.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const model = genai.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genai.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const result = await model.generateContent(
       `Convert this name to Japanese kanji suitable for a personal hanko stamp.

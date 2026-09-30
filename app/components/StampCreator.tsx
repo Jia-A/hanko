@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Button } from "./Button";
 import { saveStamp } from "@/lib/stampStorage";
 
@@ -12,6 +12,8 @@ const STYLES = {
 
 type StyleKey = keyof typeof STYLES;
 
+const CONVERT_DELAY_MS = 800;
+
 export default function StampCreator() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [name, setName] = useState("");
@@ -20,28 +22,55 @@ export default function StampCreator() {
   const [converting, setConverting] = useState(false);
   const [lastConverted, setLastConverted] = useState("");
 
-async function handleNameBlur() {
-  if (!name || name === lastConverted) return;
-  if (/[\u3040-\u9fff]/.test(name)) return;
+  // Bumped on every keystroke so a slow response for an older value is ignored
+  const requestIdRef = useRef(0);
+  const inFlightRef = useRef<string | null>(null);
 
-  setConverting(true);
-  try {
-    const res = await fetch("/api/convert-name", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    const { converted } = await res.json();
-    if (converted) {
-      setName(converted);
-      setLastConverted(converted);
-    }
-  } catch {
-    // silently fail
-  } finally {
+  const convertName = useCallback(
+    async (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed || trimmed === lastConverted) return;
+      if (/[\u3040-\u9fff]/.test(trimmed)) return;
+      if (inFlightRef.current === trimmed) return;
+
+      const id = ++requestIdRef.current;
+      inFlightRef.current = trimmed;
+      setConverting(true);
+      try {
+        const res = await fetch("/api/convert-name", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: trimmed }),
+        });
+        const { converted } = await res.json();
+        if (id === requestIdRef.current && converted) {
+          setName(converted);
+          setLastConverted(converted);
+        }
+      } catch {
+        // silently fail
+      } finally {
+        if (id === requestIdRef.current) {
+          inFlightRef.current = null;
+          setConverting(false);
+        }
+      }
+    },
+    [lastConverted],
+  );
+
+  // Convert automatically once the user pauses typing
+  useEffect(() => {
+    const timer = setTimeout(() => convertName(name), CONVERT_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [name, convertName]);
+
+  function handleNameChange(value: string) {
+    requestIdRef.current++;
+    inFlightRef.current = null;
     setConverting(false);
+    setName(value);
   }
-}
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -113,17 +142,27 @@ async function handleNameBlur() {
       <div className="flex flex-col gap-4">
         <div>
           <label className="mono mb-2 block text-xs text-muted">name</label>
-          <input
-            type="text"
-            placeholder="Tanaka · Jiya"
-            value={converting ? "Converting…" : name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={handleNameBlur}
-            disabled={converting}
-            className="w-full rounded-none border border-border bg-surface px-4 py-2.5 text-sm text-foreground transition-shadow placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[var(--ring)] disabled:opacity-50"
-          />
-          <p className="mono mt-1.5 text-[11px] text-muted">
-            Latin names are auto-converted to kanji on blur.
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Tanaka · Jiya"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              onBlur={() => convertName(name)}
+              onKeyDown={(e) => e.key === "Enter" && convertName(name)}
+              className="w-full rounded-none border border-border bg-surface px-4 py-2.5 pr-10 text-sm text-foreground transition-shadow placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[var(--ring)] disabled:opacity-50"
+            />
+            {converting && (
+              <Spinner className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent" />
+            )}
+          </div>
+          <p
+            className={`mono mt-1.5 text-[11px] ${converting ? "text-accent" : "text-muted"}`}
+            aria-live="polite"
+          >
+            {converting
+              ? `Converting “${name}” to kanji…`
+              : "Latin names are auto-converted to kanji as you type."}
           </p>
         </div>
 
@@ -148,19 +187,42 @@ async function handleNameBlur() {
 
         {name && (
           <div className="flex gap-2 pt-1">
-            <Button onClick={handleDownload} variant="secondary" className="flex-1">
+            <Button onClick={handleDownload} variant="secondary" className="flex-1" disabled={converting}>
               Download PNG
             </Button>
-            <Button onClick={handleSaveToGallery} variant="primary" className="flex-1">
+            <Button onClick={handleSaveToGallery} variant="primary" className="flex-1" disabled={converting}>
               Save to Gallery
             </Button>
           </div>
         )}
       </div>
 
-      <div className="flex items-center justify-center rounded-none border border-border bg-surface p-6">
-        <canvas ref={canvasRef} className="checker rounded-none" />
+      <div className="relative flex items-center justify-center rounded-none border border-border bg-surface p-6">
+        <canvas
+          ref={canvasRef}
+          className={`checker rounded-none transition-opacity ${converting ? "opacity-20 blur-[2px]" : ""}`}
+        />
+        {converting && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <Spinner className="h-8 w-8 text-accent" />
+            <span className="mono text-xs text-accent">Converting to kanji…</span>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function Spinner({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      className={`animate-spin motion-reduce:animate-none ${className}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
   );
 }

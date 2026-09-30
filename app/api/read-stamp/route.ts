@@ -3,6 +3,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: Request) {
+  if (!process.env.GEMINI_API_KEY) {
+    console.error("GEMINI_API_KEY is not set");
+    return Response.json({ error: "Server is missing GEMINI_API_KEY" }, { status: 500 });
+  }
+
   try {
     const { imageBase64, mimeType = "image/png" } = await req.json();
 

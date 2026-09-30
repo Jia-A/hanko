@@ -94,8 +94,8 @@ useEffect(() => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: base64 }),
       });
-      const { reading } = await res.json();
-      setReadings((prev) => ({ ...prev, [stamp.id]: reading }));
+      const { reading, error } = await res.json();
+      setReadings((prev) => ({ ...prev, [stamp.id]: reading ?? error ?? "Failed to read stamp." }));
     } catch {
       setReadings((prev) => ({ ...prev, [stamp.id]: "Failed to read stamp." }));
     } finally {
